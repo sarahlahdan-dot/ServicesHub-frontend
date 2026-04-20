@@ -1,13 +1,15 @@
-import { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router';
+import { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router";
 
 function Signup() {
   const [formData, setFormData] = useState({
-    username: '',
-    password: '',
+    name: "",
+    email: "",
+    password: "",
+    role: "customer",
   });
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
 
   const navigate = useNavigate();
 
@@ -15,28 +17,44 @@ function Signup() {
     setFormData({ ...formData, [event.target.name]: event.target.value });
   };
 
-  async function handleSubmit(event){
-    event.preventDefault()
+  async function handleSubmit(event) {
+    event.preventDefault();
 
     try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/sign-up`, formData);
-      navigate('/sign-in');
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/auth/register`,
+        formData,
+      );
+      navigate("/sign-in");
     } catch (err) {
-      setErrorMessage(err.response?.data?.err || 'An error occurred during sign up');
+      setErrorMessage(
+        err.response?.data?.message || "An error occurred during sign up",
+      );
     }
-  };
+  }
 
   return (
     <div>
       <h1>Sign Up</h1>
       <form onSubmit={handleSubmit}>
         <div>
-          <label htmlFor="username">Username:</label>
+          <label htmlFor="name">Name:</label>
           <input
-            id="username"
-            name="username"
+            id="name"
+            name="name"
             type="text"
-            value={formData.username}
+            value={formData.name}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="email">Email:</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            value={formData.email}
             onChange={handleChange}
             required
           />
@@ -52,9 +70,25 @@ function Signup() {
             required
           />
         </div>
+        <div>
+          <label htmlFor="role">I am a:</label>
+          <select
+            id="role"
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+          >
+            <option value="customer">Customer</option>
+            <option value="provider">Service Provider</option>
+          </select>
+        </div>
         <button type="submit">Sign Up</button>
       </form>
-      {errorMessage && <p style={{ color: 'red' }} role="alert">{errorMessage}</p>}
+      {errorMessage && (
+        <p style={{ color: "red" }} role="alert">
+          {errorMessage}
+        </p>
+      )}
     </div>
   );
 }
