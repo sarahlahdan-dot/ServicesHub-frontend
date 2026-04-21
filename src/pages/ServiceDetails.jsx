@@ -51,8 +51,8 @@ function ServiceDetails({ user }) {
       }
 
       try {
-        const response = await messagesApi.listForUser(providerId);
-        setConversation(response.messages);
+        const messages = await messagesApi.listForUser(providerId);
+        setConversation(messages);
       } catch {
         setConversation([]);
       }
