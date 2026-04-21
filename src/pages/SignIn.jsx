@@ -1,13 +1,15 @@
-import { useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router";
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
+import { authApi, extractApiError } from '../lib/api';
+import { storeAuthToken } from '../lib/auth';
 
-function SignIn({ setUser }) {
+function SignIn({ onAuthSuccess }) {
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
+    email: '',
+    password: '',
   });
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
 
@@ -17,60 +19,58 @@ function SignIn({ setUser }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setIsSubmitting(true);
 
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/auth/login`,
-        formData,
-      );
-      const token = response.data.token;
+      const response = await authApi.login(formData);
+      const userInfo = storeAuthToken(response.token) || response.user;
+      onAuthSuccess(userInfo);
+      setErrorMessage('');
 
-      const userInfo = JSON.parse(atob(token.split(".")[1])).payload;
-      setUser(userInfo);
-      localStorage.setItem("token", token);
-
-      navigate("/dashboard");
+      navigate(userInfo?.role === 'admin' ? '/admin' : '/dashboard');
     } catch (err) {
-      setErrorMessage(
-        err.response?.data?.message || "An error occurred during sign in",
-      );
+      setErrorMessage(extractApiError(err, 'Unable to sign in.'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div>
-      <h1>Sign In</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="email">Email:</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="password">Password:</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <button type="submit">Sign In</button>
-      </form>
-      {errorMessage && (
-        <p style={{ color: "red" }} role="alert">
-          {errorMessage}
-        </p>
-      )}
-    </div>
+    <main className="page-shell auth-page">
+      <section className="glass-card auth-card">
+        <p className="eyebrow">Welcome back</p>
+        <h1>Sign in</h1>
+        <p className="hero-copy">Use the credentials from your project3 backend account.</p>
+        <form className="stack-form" onSubmit={handleSubmit}>
+          <label htmlFor="email">
+            Email
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+          </label>
+          <label htmlFor="password">
+            Password
+            <input
+              id="password"
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
+          </label>
+          <button className="primary-button" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Signing in...' : 'Sign in'}
+          </button>
+        </form>
+        {errorMessage && <p className="form-error" role="alert">{errorMessage}</p>}
+      </section>
+    </main>
   );
 }
 

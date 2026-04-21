@@ -1,15 +1,17 @@
-import { useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router";
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
+import { authApi, extractApiError } from '../lib/api';
+import { storeAuthToken } from '../lib/auth';
 
-function Signup() {
+function Signup({ onAuthSuccess }) {
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "customer",
+    name: '',
+    email: '',
+    password: '',
+    role: 'customer',
   });
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
 
@@ -19,77 +21,75 @@ function Signup() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+    setIsSubmitting(true);
 
     try {
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/auth/register`,
-        formData,
-      );
-      navigate("/sign-in");
+      const response = await authApi.register(formData);
+      const user = storeAuthToken(response.token);
+      onAuthSuccess(user || response.user);
+      setErrorMessage('');
+      navigate('/dashboard');
     } catch (err) {
-      setErrorMessage(
-        err.response?.data?.message || "An error occurred during sign up",
-      );
+      setErrorMessage(extractApiError(err, 'Unable to create your account.'));
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
   return (
-    <div>
-      <h1>Sign Up</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="name">Name:</label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="email">Email:</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="password">Password:</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="role">I am a:</label>
-          <select
-            id="role"
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
-          >
-            <option value="customer">Customer</option>
-            <option value="provider">Service Provider</option>
-          </select>
-        </div>
-        <button type="submit">Sign Up</button>
-      </form>
-      {errorMessage && (
-        <p style={{ color: "red" }} role="alert">
-          {errorMessage}
-        </p>
-      )}
-    </div>
+    <main className="page-shell auth-page">
+      <section className="glass-card auth-card">
+        <p className="eyebrow">New to ServicesHub</p>
+        <h1>Create your account</h1>
+        <p className="hero-copy">Choose whether you are booking services or offering them.</p>
+        <form className="stack-form" onSubmit={handleSubmit}>
+          <label htmlFor="name">
+            Full name
+            <input
+              id="name"
+              name="name"
+              type="text"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
+          </label>
+          <label htmlFor="email">
+            Email
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+          </label>
+          <label htmlFor="password">
+            Password
+            <input
+              id="password"
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
+          </label>
+          <label htmlFor="role">
+            Account type
+            <select id="role" name="role" value={formData.role} onChange={handleChange}>
+              <option value="customer">Customer</option>
+              <option value="provider">Provider</option>
+            </select>
+          </label>
+          <button className="primary-button" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Creating account...' : 'Create account'}
+          </button>
+        </form>
+        {errorMessage && <p className="form-error" role="alert">{errorMessage}</p>}
+      </section>
+    </main>
   );
 }
 
