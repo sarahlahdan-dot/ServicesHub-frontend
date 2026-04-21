@@ -19,32 +19,31 @@ function App() {
 
     async function restoreSession() {
       const token = getStoredToken();
+      const storedUser = getStoredUser();
 
-      if (!token) {
+      if (!token || !storedUser) {
+        clearStoredAuth();
         setAuthReady(true);
         return;
       }
 
-      const storedUser = getStoredUser();
       if (storedUser && !ignore) {
         setUser(storedUser);
+        setAuthReady(true);
       }
 
       try {
         const response = await authApi.verify();
 
-        if (!ignore) {
+        if (!ignore && response?.user) {
           setUser(response.user);
         }
-      } catch {
-        clearStoredAuth();
+      } catch (error) {
+        const status = error?.response?.status;
 
-        if (!ignore) {
+        if ((status === 401 || status === 403) && !ignore) {
+          clearStoredAuth();
           setUser(null);
-        }
-      } finally {
-        if (!ignore) {
-          setAuthReady(true);
         }
       }
     }

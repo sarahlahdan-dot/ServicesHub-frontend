@@ -21,6 +21,30 @@ function unwrap(response) {
   return response.data;
 }
 
+function extractList(data, keys) {
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  for (const key of keys) {
+    if (Array.isArray(data?.[key])) {
+      return data[key];
+    }
+  }
+
+  return [];
+}
+
+function extractEntity(data, keys) {
+  for (const key of keys) {
+    if (data?.[key] && typeof data[key] === 'object' && !Array.isArray(data[key])) {
+      return data[key];
+    }
+  }
+
+  return data;
+}
+
 export function extractApiError(error, fallbackMessage = 'Something went wrong.') {
   return (
     error.response?.data?.message ||
@@ -44,10 +68,10 @@ export const authApi = {
 
 export const servicesApi = {
   list() {
-    return api.get('/services').then(unwrap);
+    return api.get('/services').then((response) => extractList(response.data, ['services']));
   },
   get(id) {
-    return api.get(`/services/${id}`).then(unwrap);
+    return api.get(`/services/${id}`).then((response) => extractEntity(response.data, ['service']));
   },
   create(payload) {
     return api.post('/services', payload).then(unwrap);
@@ -65,13 +89,13 @@ export const bookingsApi = {
     return api.post('/bookings', payload).then(unwrap);
   },
   mine() {
-    return api.get('/bookings/mine').then(unwrap);
+    return api.get('/bookings/mine').then((response) => extractList(response.data, ['bookings']));
   },
   updateStatus(id, status) {
     return api.patch(`/bookings/${id}/status`, { status }).then(unwrap);
   },
   getChat(id) {
-    return api.get(`/bookings/${id}/chat`).then(unwrap);
+    return api.get(`/bookings/${id}/chat`).then((response) => extractList(response.data, ['chat', 'messages']));
   },
   sendChatMessage(id, message) {
     return api.post(`/bookings/${id}/chat`, { message }).then(unwrap);
@@ -80,7 +104,7 @@ export const bookingsApi = {
 
 export const cartApi = {
   get() {
-    return api.get('/cart').then(unwrap);
+    return api.get('/cart').then((response) => extractEntity(response.data, ['cart']));
   },
   addItem(payload) {
     return api.post('/cart/items', payload).then(unwrap);
@@ -95,7 +119,7 @@ export const cartApi = {
 
 export const reviewsApi = {
   byService(serviceId) {
-    return api.get(`/reviews/service/${serviceId}`).then(unwrap);
+    return api.get(`/reviews/service/${serviceId}`).then((response) => extractList(response.data, ['reviews']));
   },
   create(bookingId, payload) {
     return api.post(`/reviews/${bookingId}`, payload).then(unwrap);
@@ -104,9 +128,9 @@ export const reviewsApi = {
 
 export const messagesApi = {
   listForUser(userId) {
-    return api.get(`/messages/user/${userId}`).then(unwrap);
+    return api.get(`/messages/user/${userId}`).then((response) => extractList(response.data, ['messages']));
   },
   sendToUser(userId, content) {
-    return api.post(`/messages/user/${userId}`, { content }).then(unwrap);
+    return api.post(`/messages/user/${userId}`, { content }).then((response) => extractEntity(response.data, ['message']));
   },
 };
