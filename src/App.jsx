@@ -5,6 +5,11 @@ import SignUp from './pages/Signup';
 import SignIn from './pages/SignIn';
 import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
+import ChatWindow from './components/ChatWindow'
+import ServiceListings from './pages/ServiceListings';
+import serviceDetails from './pages/serviceDetails';
+import serviceCard from './components/serviceCard';
+
 
 function App() {
   const [user, setUser] = useState(null);
