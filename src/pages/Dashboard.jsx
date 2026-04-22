@@ -3,6 +3,7 @@ import {
   bookingsApi,
   cartApi,
   extractApiError,
+  messagesApi,
   reviewsApi,
   servicesApi,
 } from '../lib/api';
@@ -20,6 +21,19 @@ const emptyServiceForm = {
   availability: true,
 };
 
+const serviceCategories = [
+  'Cleaning',
+  'Plumbing',
+  'Electrical',
+  'Tutoring',
+  'Design',
+  'Repair',
+  'Moving',
+  'Beauty',
+  'Fitness',
+  'Other',
+];
+
 function Dashboard({ user }) {
   const [services, setServices] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -29,6 +43,10 @@ function Dashboard({ user }) {
   const [activeBookingId, setActiveBookingId] = useState('');
   const [bookingChatMessages, setBookingChatMessages] = useState([]);
   const [bookingChatDraft, setBookingChatDraft] = useState('');
+  const [directInbox, setDirectInbox] = useState([]);
+  const [activeDirectUser, setActiveDirectUser] = useState(null);
+  const [directMessages, setDirectMessages] = useState([]);
+  const [directMessageDraft, setDirectMessageDraft] = useState('');
   const [reviewDrafts, setReviewDrafts] = useState({});
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
@@ -67,6 +85,24 @@ function Dashboard({ user }) {
   useEffect(() => {
     loadDashboardData();
   }, [loadDashboardData]);
+
+  const loadDirectInbox = useCallback(async () => {
+    const conversations = await messagesApi.inbox();
+    setDirectInbox(conversations);
+  }, []);
+
+  useEffect(() => {
+    if (user.role === 'admin') {
+      setDirectInbox([]);
+      setActiveDirectUser(null);
+      setDirectMessages([]);
+      return;
+    }
+
+    loadDirectInbox().catch(() => {
+      setDirectInbox([]);
+    });
+  }, [loadDirectInbox, user.role]);
 
   const resetServiceForm = () => {
     setServiceForm(emptyServiceForm);
@@ -223,6 +259,42 @@ function Dashboard({ user }) {
     }
   };
 
+  const openDirectConversation = async (conversationUser) => {
+    setActiveDirectUser(conversationUser);
+
+    try {
+      const messages = await messagesApi.listForUser(conversationUser._id);
+      setDirectMessages(messages);
+      setErrorMessage('');
+    } catch (error) {
+      setErrorMessage(extractApiError(error, 'Unable to load this direct conversation.'));
+      setStatusMessage('');
+    }
+  };
+
+  const handleDirectMessageSubmit = async (event) => {
+    event.preventDefault();
+    if (!activeDirectUser?._id) {
+      return;
+    }
+
+    setWorking(true);
+
+    try {
+      const message = await messagesApi.sendToUser(activeDirectUser._id, directMessageDraft);
+      setDirectMessages((current) => [...current, message]);
+      setDirectMessageDraft('');
+      setStatusMessage('Direct message sent.');
+      setErrorMessage('');
+      await loadDirectInbox();
+    } catch (error) {
+      setErrorMessage(extractApiError(error, 'Unable to send that direct message.'));
+      setStatusMessage('');
+    } finally {
+      setWorking(false);
+    }
+  };
+
   const handleReviewDraftChange = (bookingId, field, value) => {
     setReviewDrafts((current) => ({
       ...current,
@@ -305,7 +377,12 @@ function Dashboard({ user }) {
               </label>
               <label>
                 Category
-                <input name="category" value={serviceForm.category} onChange={handleServiceFormChange} required />
+                <select name="category" value={serviceForm.category} onChange={handleServiceFormChange} required>
+                  <option value="" disabled>Select a category</option>
+                  {serviceCategories.map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
               </label>
               <label>
                 Price
@@ -479,6 +556,88 @@ function Dashboard({ user }) {
           )}
         </article>
       </section>
+
+      {user.role !== 'admin' && (
+        <section className="feature-grid bookings-grid">
+          <article className="glass-card bookings-panel">
+            <div className="section-header compact left-aligned">
+              <div>
+                <p className="eyebrow">Direct inbox</p>
+                <h2>People messaging you</h2>
+              </div>
+            </div>
+            {directInbox.length === 0 ? (
+              <p className="empty-state">No direct conversations yet.</p>
+            ) : (
+              <div className="stack-list">
+                {directInbox.map((conversation) => (
+                  <article className="list-card" key={conversation.user?._id || conversation.latestMessage?._id}>
+                    <div className="list-card-head wrap">
+                      <strong>{conversation.user?.name || 'Unknown user'}</strong>
+                      <span className="category-pill">{conversation.user?.role || 'user'}</span>
+                    </div>
+                    <p>{conversation.latestMessage?.content || 'No message preview available.'}</p>
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={() => openDirectConversation(conversation.user)}
+                    >
+                      {activeDirectUser?._id === conversation.user?._id ? 'Refresh conversation' : 'Open conversation'}
+                    </button>
+                  </article>
+                ))}
+              </div>
+            )}
+          </article>
+
+          <article className="glass-card bookings-panel">
+            <div className="section-header compact left-aligned">
+              <div>
+                <p className="eyebrow">Direct conversation</p>
+                <h2>{activeDirectUser ? activeDirectUser.name : 'Choose a conversation'}</h2>
+              </div>
+            </div>
+            {!activeDirectUser ? (
+              <p className="empty-state">Select a person from your inbox to read and reply.</p>
+            ) : (
+              <>
+                <div className="message-thread booking-thread">
+                  {directMessages.length === 0 ? (
+                    <p className="empty-state">No direct messages in this conversation yet.</p>
+                  ) : (
+                    directMessages.map((message) => {
+                      const isCurrentUser = getEntityId(message.senderId) === user.id;
+
+                      return (
+                        <MessageBubble
+                          key={message._id}
+                          isCurrentUser={isCurrentUser}
+                          senderName={isCurrentUser ? 'You' : message.senderId?.name || activeDirectUser.name}
+                          content={message.content}
+                        />
+                      );
+                    })
+                  )}
+                </div>
+                <form className="stack-form" onSubmit={handleDirectMessageSubmit}>
+                  <label>
+                    Reply
+                    <textarea
+                      rows="4"
+                      value={directMessageDraft}
+                      onChange={(event) => setDirectMessageDraft(event.target.value)}
+                      required
+                    />
+                  </label>
+                  <button className="primary-button" type="submit" disabled={working}>
+                    Send direct message
+                  </button>
+                </form>
+              </>
+            )}
+          </article>
+        </section>
+      )}
     </main>
   );
 }

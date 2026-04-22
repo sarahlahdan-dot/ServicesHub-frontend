@@ -128,6 +128,9 @@ export const reviewsApi = {
 };
 
 export const messagesApi = {
+  inbox() {
+    return api.get('/messages/inbox').then((response) => extractList(response.data, ['conversations']));
+  },
   listForUser(userId) {
     return api.get(`/messages/user/${userId}`).then((response) => extractList(response.data, ['messages']));
   },
