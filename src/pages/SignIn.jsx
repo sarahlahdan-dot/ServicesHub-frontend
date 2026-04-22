@@ -40,7 +40,7 @@ function SignIn({ onAuthSuccess }) {
       <section className="glass-card auth-card">
         <p className="eyebrow">Welcome back</p>
         <h1>Sign in</h1>
-        <p className="hero-copy">Use the credentials from your project3 backend account.</p>
+        <p className="hero-copy">Sign in to manage bookings, messages, and account details.</p>
         <form className="stack-form" onSubmit={handleSubmit}>
           <label htmlFor="email">
             Email
