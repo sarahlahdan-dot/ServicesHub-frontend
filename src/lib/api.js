@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { getStoredToken } from './auth';
 
-const baseURL = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+const configuredBaseUrl = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+const baseURL = configuredBaseUrl.endsWith('/api') ? configuredBaseUrl : `${configuredBaseUrl}/api`;
 
 const api = axios.create({
   baseURL,
