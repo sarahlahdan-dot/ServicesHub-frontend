@@ -53,11 +53,10 @@ function Homepage({ user }) {
     <main className="page-shell">
       <section className="hero-panel">
         <div>
-          <p className="eyebrow">Service marketplace</p>
-          <h1>Connect customers and providers through the project3 backend.</h1>
+          <p className="eyebrow">Local services</p>
+          <h1>Find trusted professionals and book the help you need.</h1>
           <p className="hero-copy">
-            Browse live services, add bookings to your cart, leave reviews after completed work, and keep
-            conversations moving without leaving the app.
+            Compare services, schedule bookings, message providers, and leave reviews after the work is done.
           </p>
         </div>
         <div className="hero-actions">
@@ -77,7 +76,7 @@ function Homepage({ user }) {
 
       <section className="section-header">
         <div>
-          <p className="eyebrow">Live inventory</p>
+          <p className="eyebrow">Available now</p>
           <h2>Available services</h2>
         </div>
         <span className="summary-chip">{filteredServices.length} listings</span>
