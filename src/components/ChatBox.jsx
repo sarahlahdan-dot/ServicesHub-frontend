@@ -28,7 +28,7 @@ function ChatBox({ name, messages, currentUserId, text, setText, onSend, onClose
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
-        <button onClick={onSend}>send meesage</button>
+        <button onClick={onSend}>send message</button>
      
     </>
   );
