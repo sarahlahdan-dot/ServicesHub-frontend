@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { extractApiError, servicesApi } from '../lib/api';
+import { getUserDisplayName } from '../lib/utils';
 import ServiceCard from '../components/ServiceCard';
 
 function Homepage({ user }) {
@@ -39,7 +40,7 @@ function Homepage({ user }) {
         service.title,
         service.category,
         service.description,
-        service.providerId?.name,
+        getUserDisplayName(service.providerId),
       ]
         .filter(Boolean)
         .join(' ')

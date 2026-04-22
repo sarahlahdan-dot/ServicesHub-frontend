@@ -1,12 +1,10 @@
 import { Link } from 'react-router';
+import { getUserDisplayName } from '../lib/utils';
 
-/**
- * ServiceCard — renders one Service document.
- *
- * variant="card"  (default) → full homepage tile with category pill, meta dl, and a link
- * variant="list"            → compact dashboard list-card with optional edit / delete actions
- */
+
 function ServiceCard({ service, variant = 'card', onEdit, onDelete }) {
+  const providerName = getUserDisplayName(service.providerId);
+
   if (variant === 'list') {
     return (
       <article className="list-card">
@@ -44,7 +42,7 @@ function ServiceCard({ service, variant = 'card', onEdit, onDelete }) {
       <dl className="service-meta">
         <div>
           <dt>Provider</dt>
-          <dd>{service.providerId?.name || 'Unknown'}</dd>
+          <dd>{providerName || 'Unknown'}</dd>
         </div>
         <div>
           <dt>Price</dt>
