@@ -1,9 +1,4 @@
-/**
- * UserCard — renders one User document.
- *
- * Props:
- *   user – User object ({ name, email, role })
- */
+import React from 'react';
 function UserCard({ user }) {
   return (
     <article className="list-card">
