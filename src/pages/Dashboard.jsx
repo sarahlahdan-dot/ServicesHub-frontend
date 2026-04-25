@@ -53,19 +53,23 @@ function Dashboard({ user }) {
   const [errorMessage, setErrorMessage] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
 
+  const currentUserId = getEntityId(user);
   const isCustomer = user.role === 'customer';
   const canManageServices = user.role === 'provider' || user.role === 'admin';
 
   const myServices = useMemo(
-    () => services.filter((service) => getEntityId(service.providerId) === user.id),
-    [services, user.id]
+    () => services.filter((service) => getEntityId(service.providerId) === currentUserId),
+    [currentUserId, services]
   );
 
-  const loadDashboardData = useCallback(async () => {
-    setLoading(true);
+  const loadDashboardData = useCallback(async ({ showLoading = true } = {}) => {
+    if (showLoading) {
+      setLoading(true);
+    }
 
     try {
-      const requests = [servicesApi.list(), bookingsApi.mine()];
+      const bookingRequest = isCustomer ? bookingsApi.mine() : bookingsApi.provider();
+      const requests = [servicesApi.list(), bookingRequest];
       if (isCustomer) {
         requests.push(cartApi.get());
       }
@@ -78,12 +82,26 @@ function Dashboard({ user }) {
     } catch (error) {
       setErrorMessage(extractApiError(error, 'Unable to load your dashboard.'));
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   }, [isCustomer]);
 
   useEffect(() => {
     loadDashboardData();
+  }, [loadDashboardData]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      loadDashboardData({ showLoading: false }).catch(() => {
+        // The foreground status banner already handles fetch failures.
+      });
+    }, 15000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
   }, [loadDashboardData]);
 
   const loadDirectInbox = useCallback(async () => {
@@ -342,7 +360,12 @@ function Dashboard({ user }) {
           <h1>{user.name}</h1>
           <p>Signed in as a {user.role}. This view is wired to live services, bookings, cart, reviews, and chat routes.</p>
         </div>
-        <span className="summary-chip">{bookings.length} bookings</span>
+        <div className="action-row wrap">
+          <span className="summary-chip">{bookings.length} bookings</span>
+          <button className="secondary-button" type="button" onClick={() => loadDashboardData()} disabled={working}>
+            Refresh data
+          </button>
+        </div>
       </section>
 
       {(statusMessage || errorMessage) && (
@@ -494,7 +517,7 @@ function Dashboard({ user }) {
                   <BookingCard
                     key={booking._id}
                     booking={booking}
-                    currentUserId={user.id}
+                    currentUserId={currentUserId}
                     isCustomer={isCustomer}
                     onStatusUpdate={handleBookingStatusUpdate}
                     onOpenChat={openBookingChat}
@@ -525,7 +548,7 @@ function Dashboard({ user }) {
                   <p className="empty-state">No messages in this booking chat yet.</p>
                 ) : (
                   bookingChatMessages.map((message, index) => {
-                    const isCurrentUser = getEntityId(message.senderId) === user.id;
+                    const isCurrentUser = getEntityId(message.senderId) === currentUserId;
 
                     return (
                       <MessageBubble
@@ -606,7 +629,7 @@ function Dashboard({ user }) {
                     <p className="empty-state">No direct messages in this conversation yet.</p>
                   ) : (
                     directMessages.map((message) => {
-                      const isCurrentUser = getEntityId(message.senderId) === user.id;
+                      const isCurrentUser = getEntityId(message.senderId) === currentUserId;
 
                       return (
                         <MessageBubble
