@@ -46,6 +46,44 @@ function extractEntity(data, keys) {
   return data;
 }
 
+function isBookingLike(value) {
+  return Boolean(
+    value &&
+    typeof value === 'object' &&
+    (value.serviceId || value.providerId || value.customerId || value.fromDate || value.toDate || value.status)
+  );
+}
+
+function extractBookingList(data) {
+  const directBookings = extractList(data, [
+    'bookings',
+    'providerBookings',
+    'customerBookings',
+    'orders',
+    'requests',
+    'data',
+  ]);
+
+  if (directBookings.length > 0) {
+    return directBookings;
+  }
+
+  const nestedCollections = [
+    data?.bookings,
+    data?.data,
+    data?.results,
+  ].filter((value) => value && typeof value === 'object' && !Array.isArray(value));
+
+  for (const collection of nestedCollections) {
+    const flattened = Object.values(collection).flatMap((value) => (Array.isArray(value) ? value : []));
+    if (flattened.some(isBookingLike)) {
+      return flattened;
+    }
+  }
+
+  return [];
+}
+
 export function extractApiError(error, fallbackMessage = 'Something went wrong.') {
   return (
     error.response?.data?.message ||
@@ -90,7 +128,10 @@ export const bookingsApi = {
     return api.post('/bookings', payload).then(unwrap);
   },
   mine() {
-    return api.get('/bookings/mine').then((response) => extractList(response.data, ['bookings']));
+    return api.get('/bookings/mine').then((response) => extractBookingList(response.data));
+  },
+  provider() {
+    return api.get('/bookings/provider').then((response) => extractBookingList(response.data));
   },
   updateStatus(id, status) {
     return api.patch(`/bookings/${id}/status`, { status }).then(unwrap);
