@@ -1,9 +1,4 @@
-/**
- * ReviewCard — renders one Review document.
- *
- * Props:
- *   review – Review object ({ userId (populated), rating, comment })
- */
+import React from 'react';
 function ReviewCard({ review }) {
   return (
     <article className="list-card">

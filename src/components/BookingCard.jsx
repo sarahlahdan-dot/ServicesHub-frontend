@@ -1,19 +1,6 @@
 import { getEntityId } from '../lib/utils';
 
-/**
- * BookingCard — renders one Booking document.
- *
- * Props:
- *   booking        – Booking object (populated serviceId, customerId, providerId)
- *   currentUserId  – logged-in user's ID string
- *   isCustomer     – boolean, whether the current user has the customer role
- *   onStatusUpdate(bookingId, status) – provider callback
- *   onOpenChat(bookingId)             – open/refresh chat callback
- *   isActiveChat   – boolean, whether this booking's chat is currently open
- *   reviewDraft    – { rating, comment } state for the review form
- *   onReviewChange(field, value)      – update review draft field
- *   onReviewSubmit(event)             – submit the review form
- */
+
 function BookingCard({
   booking,
   currentUserId,

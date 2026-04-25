@@ -1,10 +1,5 @@
-/**
- * CartItem — renders one item inside a Cart document.
- *
- * Props:
- *   item      – cart item object ({ serviceId (populated), fromDate, toDate })
- *   onRemove(serviceId) – remove-from-cart callback
- */
+
+import React from 'react';
 function CartItem({ item, onRemove }) {
   const serviceId = item.serviceId?._id || item.serviceId;
 
