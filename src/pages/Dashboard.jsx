@@ -358,7 +358,6 @@ function Dashboard({ user }) {
         <div>
           <p className="eyebrow">Dashboard</p>
           <h1>{user.name}</h1>
-          <p>Signed in as a {user.role}. This view is wired to live services, bookings, cart, reviews, and chat routes.</p>
         </div>
         <div className="action-row wrap">
           <span className="summary-chip">{bookings.length} bookings</span>
