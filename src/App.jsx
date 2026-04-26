@@ -14,6 +14,7 @@ import AdminPanel from "./pages/AdminPanel";
 
 function App() {
   const [user, setUser] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -24,9 +25,30 @@ function App() {
       } catch (err) {
         console.error("Invalid token:", err);
         localStorage.removeItem("token");
+      } finally {
+        setAuthReady(true);
       }
+    } else {
+      setAuthReady(true);
     }
   }, []);
+
+  if (!authReady) {
+    return (
+      <div>
+        <Navbar user={user} setUser={setUser} />
+        <div
+          style={{
+            padding: "60px",
+            textAlign: "center",
+            color: "var(--muted)",
+          }}
+        >
+          Loading…
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
