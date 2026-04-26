@@ -1,37 +1,71 @@
-import { Link, NavLink } from 'react-router';
+import { Link } from "react-router";
 
-function Navbar({ user, onLogout }) {
-  const dashboardPath = user?.role === 'admin' ? '/admin' : '/dashboard';
+function Navbar({ user, setUser }) {
+  function logOut() {
+    localStorage.removeItem("token");
+    setUser(null);
+  }
 
   return (
-    <header className="topbar">
-      <div className="brand-block">
-        <Link className="brand-mark" to="/">
-          <span>SH</span>
-        </Link>
-        <div>
-          <Link className="brand-name" to="/">ServicesHub</Link>
-          <p className="brand-copy">Book trusted local services and manage every request in one place.</p>
-        </div>
-      </div>
+    <nav className="navbar">
+      <Link to="/" className="navbar-brand">
+        <span className="brand-dot"></span>
+        ServiceHub
+      </Link>
 
-      <nav className="topbar-nav">
-        <NavLink className="nav-item" to="/">Services</NavLink>
+      <ul className="navbar-links">
+        <li>
+          <Link to="/services">Browse</Link>
+        </li>
 
         {user ? (
           <>
-            <NavLink className="nav-item" to={dashboardPath}>{user.role === 'admin' ? 'Admin' : 'Dashboard'}</NavLink>
-            <span className="nav-pill">{user.name} · {user.role}</span>
-            <button className="ghost-button" onClick={onLogout} type="button">Log out</button>
+            <li>
+              <Link to="/dashboard">Dashboard</Link>
+            </li>
+            {user.role === "customer" && (
+              <li>
+                <Link to="/my-bookings">My Bookings</Link>
+              </li>
+            )}
+            {user.role === "provider" && (
+              <>
+                <li>
+                  <Link to="/provider/bookings">Bookings</Link>
+                </li>
+                <li>
+                  <Link to="/provider/services">My Services</Link>
+                </li>
+              </>
+            )}
+            {user.role === "admin" && (
+              <li>
+                <Link to="/admin">Admin</Link>
+              </li>
+            )}
+            <li>
+              <span className="navbar-user">👤 {user.name}</span>
+            </li>
+            <li>
+              <button className="btn-nav-logout" onClick={logOut}>
+                Log Out
+              </button>
+            </li>
           </>
         ) : (
           <>
-            <NavLink className="nav-item" to="/sign-up">Create account</NavLink>
-            <NavLink className="primary-button small" to="/sign-in">Sign in</NavLink>
+            <li>
+              <Link to="/sign-in">Sign In</Link>
+            </li>
+            <li>
+              <Link to="/sign-up" className="btn-nav-primary">
+                Get Started
+              </Link>
+            </li>
           </>
         )}
-      </nav>
-    </header>
+      </ul>
+    </nav>
   );
 }
 

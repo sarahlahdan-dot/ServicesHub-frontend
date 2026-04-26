@@ -1,92 +1,110 @@
-import { useEffect, useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router';
-import Homepage from './pages/Homepage';
-import SignUp from './pages/Signup';
-import SignIn from './pages/SignIn';
-import Navbar from './components/Navbar';
-import Dashboard from './pages/Dashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import ServiceDetails from './pages/ServiceDetails';
-import { authApi } from './lib/api';
-import { clearStoredAuth, getStoredToken, getStoredUser } from './lib/auth';
+import { useState, useEffect } from "react";
+import { Routes, Route, Navigate } from "react-router";
+import Navbar from "./components/Navbar";
+import Homepage from "./pages/Homepage";
+import SignUp from "./pages/Signup";
+import SignIn from "./pages/SignIn";
+import Dashboard from "./pages/Dashboard";
+import ServiceListing from "./pages/ServiceListing";
+import ServiceDetail from "./pages/ServiceDetail";
+import MyBookings from "./pages/MyBookings";
+import ProviderBookings from "./pages/ProviderBookings";
+import ProviderServices from "./pages/ProviderServices";
+import AdminPanel from "./pages/AdminPanel";
 
 function App() {
   const [user, setUser] = useState(null);
-  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    let ignore = false;
-
-    async function restoreSession() {
-      const token = getStoredToken();
-      const storedUser = getStoredUser();
-
-      if (!token || !storedUser) {
-        clearStoredAuth();
-        setAuthReady(true);
-        return;
-      }
-
-      if (storedUser && !ignore) {
-        setUser(storedUser);
-        setAuthReady(true);
-      }
-
+    const token = localStorage.getItem("token");
+    if (token) {
       try {
-        const response = await authApi.verify();
-
-        if (!ignore && response?.user) {
-          setUser(response.user);
-        }
-      } catch (error) {
-        const status = error?.response?.status;
-
-        if ((status === 401 || status === 403) && !ignore) {
-          clearStoredAuth();
-          setUser(null);
-        }
+        const userInfo = JSON.parse(atob(token.split(".")[1])).payload;
+        setUser(userInfo);
+      } catch (err) {
+        console.error("Invalid token:", err);
+        localStorage.removeItem("token");
       }
     }
-
-    restoreSession();
-
-    return () => {
-      ignore = true;
-    };
   }, []);
 
-  const handleLogout = () => {
-    clearStoredAuth();
-    setUser(null);
-  };
-
-  if (!authReady) {
-    return <main className="page-shell"><p className="empty-state">Restoring your session...</p></main>;
-  }
-
   return (
-    <div className="app-shell">
-      <Navbar user={user} onLogout={handleLogout} />
+    <div>
+      <Navbar user={user} setUser={setUser} />
       <Routes>
-        <Route path="/" element={<Homepage user={user} />} />
-        <Route path="/services/:serviceId" element={<ServiceDetails user={user} />} />
+        {/* Public */}
+        <Route path="/" element={<Homepage />} />
+        <Route path="/services" element={<ServiceListing />} />
+        <Route path="/services/:id" element={<ServiceDetail user={user} />} />
+
+        {/* Auth — redirect if already logged in */}
         <Route
           path="/sign-up"
-          element={!user ? <SignUp onAuthSuccess={setUser} /> : <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace />}
+          element={!user ? <SignUp /> : <Navigate to="/dashboard" />}
         />
         <Route
           path="/sign-in"
-          element={!user ? <SignIn onAuthSuccess={setUser} /> : <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace />}
+          element={
+            !user ? <SignIn setUser={setUser} /> : <Navigate to="/dashboard" />
+          }
         />
+
+        {/* Protected — any logged-in user */}
         <Route
           path="/dashboard"
-          element={user ? (user.role === 'admin' ? <Navigate to="/admin" replace /> : <Dashboard user={user} />) : <Navigate to="/sign-in" replace />}
+          element={
+            user ? <Dashboard user={user} /> : <Navigate to="/sign-in" />
+          }
+        />
+
+        {/* Protected — customer only */}
+        <Route
+          path="/my-bookings"
+          element={
+            user && user.role === "customer" ? (
+              <MyBookings user={user} />
+            ) : (
+              <Navigate to="/sign-in" />
+            )
+          }
+        />
+
+        {/* Protected — provider only */}
+        <Route
+          path="/provider/bookings"
+          element={
+            user && user.role === "provider" ? (
+              <ProviderBookings user={user} />
+            ) : (
+              <Navigate to="/sign-in" />
+            )
+          }
         />
         <Route
-          path="/admin"
-          element={user ? (user.role === 'admin' ? <AdminDashboard user={user} /> : <Navigate to="/dashboard" replace />) : <Navigate to="/sign-in" replace />}
+          path="/provider/services"
+          element={
+            user && user.role === "provider" ? (
+              <ProviderServices user={user} />
+            ) : (
+              <Navigate to="/sign-in" />
+            )
+          }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+
+        {/* Protected — admin only */}
+        <Route
+          path="/admin"
+          element={
+            user && user.role === "admin" ? (
+              <AdminPanel />
+            ) : (
+              <Navigate to="/sign-in" />
+            )
+          }
+        />
+
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </div>
   );
